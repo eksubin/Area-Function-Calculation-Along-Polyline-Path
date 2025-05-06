@@ -4,6 +4,7 @@ from scipy.ndimage import map_coordinates
 from PIL import Image
 from scipy.interpolate import splprep, splev
 from scipy.signal import savgol_filter
+import os
 
 def load_image_as_mask(image_path, threshold=50):
     image = Image.open(image_path).convert("L")
@@ -59,7 +60,7 @@ def compute_area_function_along_path(mask, path, cut_length=100):
         coords_yx = np.vstack((coords[1], coords[0]))  # rows, cols
 
         values = map_coordinates(mask.astype(float), coords_yx, order=1, mode='constant', cval=0)
-        area = np.trapz(values, dx=(cut_length / 1000))
+        area = np.trapz(values, dx=(cut_length / 1000)) * (0.93** 2)
         areas.append(area)
 
         distances.append(distances[-1] + np.linalg.norm(path[i] - path[i - 1]))
@@ -111,15 +112,57 @@ def plot_results(mask, path, distances, areas, cut_length=100):
 
 
 if __name__ == "__main__":
-    image_path = "SampleAirway.png"  # Replace with your PNG
-    mask = load_image_as_mask(image_path)
+    image_path = "slice_036.png"  # Replace with your PNG
+    maskT = load_image_as_mask(image_path)
+    path = get_polyline_from_user(maskT)
 
-    path = get_polyline_from_user(mask)
-    distances, areas = compute_area_function_along_path(mask, path)
+    # Configuration
+    folder_path = "./ImageSlices"  # <-- Set to your folder with PNG images
+    window_length = 21
+    polyorder = 3
 
-    # Smooth the area function
-    areas_smooth = savgol_filter(areas, window_length=21, polyorder=3)
+    all_areas = []
+    all_distances = []
 
-    # Plot
-    plot_results(mask, path, distances, areas_smooth)
+    for filename in os.listdir(folder_path):
+        if filename.endswith(".png"):
+            image_path = os.path.join(folder_path, filename)
+            print(f"Processing {filename}...")
+
+            mask = load_image_as_mask(image_path)
+            #path = get_polyline_from_user(mask)  # If path is the same across images, you can define it outside the loop
+
+            distances, areas = compute_area_function_along_path(mask, path)
+            areas_smooth = savgol_filter(areas, window_length=window_length, polyorder=polyorder)
+
+            all_distances.append(distances)
+            all_areas.append(areas_smooth)
+
+    # Align arrays (in case they vary slightly in length)
+    min_length = min(len(d) for d in all_distances)
+    all_distances = np.array([d[:min_length] for d in all_distances])
+    all_areas = np.array([a[:min_length] for a in all_areas])
+
+    # Compute averages
+    avg_distances = np.mean(all_distances, axis=0)
+    avg_areas = np.mean(all_areas, axis=0)
+
+    # Plot average result
+    plt.figure(figsize=(10, 5))
+    plt.plot(avg_distances, avg_areas, label='Average Area Function', color='blue')
+    plt.xlabel("Distance along path")
+    plt.ylabel("Smoothed Cross-sectional Area")
+    plt.title("Average Area Function Across All Images")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+    # distances, areas = compute_area_function_along_path(mask, path)
+
+    # # Smooth the area function
+    # areas_smooth = savgol_filter(areas, window_length=21, polyorder=3)
+
+    # # Plot
+    # plot_results(mask, path, distances, areas_smooth)
 
