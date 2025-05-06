@@ -71,11 +71,11 @@ def compute_area_function_along_path(mask, path, cut_length=100):
 def plot_results(mask, path, distances, areas, cut_length=100):
     areas_smooth = savgol_filter(areas, window_length=21, polyorder=3)
 
-    fig, axs = plt.subplots(1, 2, figsize=(14, 6))
+    plt.figure(figsize=(10, 5))
 
     # === Left: Mask with polyline and perpendicular cuts ===
-    axs[0].imshow(mask, cmap='gray')
-    axs[0].plot(path[:, 0], path[:, 1], 'r-', linewidth=2, label="Polyline Path")
+    plt.imshow(mask, cmap='gray')
+    plt.plot(path[:, 0], path[:, 1], 'r-', linewidth=2, label="Polyline Path")
 
     # Draw perpendicular cuts every N steps
     step = max(1, len(path) // 50)
@@ -92,20 +92,20 @@ def plot_results(mask, path, distances, areas, cut_length=100):
 
         p1 = center + (cut_length / 2) * ortho
         p2 = center - (cut_length / 2) * ortho
-        axs[0].plot([p1[0], p2[0]], [p1[1], p2[1]], 'g-', alpha=0.6)
+        plt.plot([p1[0], p2[0]], [p1[1], p2[1]], 'g-', alpha=0.6)
 
-    axs[0].set_title("Mask with Polyline Path and Perpendicular Cuts")
-    axs[0].axis('off')
-    axs[0].legend()
+    plt.title("Mask with Polyline Path and Perpendicular Cuts")
+    plt.axis('off')
+    plt.legend()
 
-    # === Right: Area function plot ===
-    axs[1].plot(distances, areas, alpha=0.4, label='Raw Area', linestyle='--')
-    axs[1].plot(distances, areas_smooth, label='Smoothed Area', linewidth=2)
-    axs[1].set_title("Area Function Along Path")
-    axs[1].set_xlabel("Distance Along Path (pixels)")
-    axs[1].set_ylabel("Cross-sectional Area")
-    axs[1].legend()
-    axs[1].grid(True)
+    # # === Right: Area function plot ===
+    # axs[1].plot(distances, areas, alpha=0.4, label='Raw Area', linestyle='--')
+    # axs[1].plot(distances, areas_smooth, label='Smoothed Area', linewidth=2)
+    # axs[1].set_title("Area Function Along Path")
+    # axs[1].set_xlabel("Distance Along Path (pixels)")
+    # axs[1].set_ylabel("Cross-sectional Area")
+    # axs[1].legend()
+    # axs[1].grid(True)
 
     plt.tight_layout()
     plt.show()
@@ -116,6 +116,7 @@ if __name__ == "__main__":
     maskT = load_image_as_mask(image_path)
     path = get_polyline_from_user(maskT)
 
+    ###################### For 3D volumes ###############
     # Configuration
     folder_path = "./ImageSlices"  # <-- Set to your folder with PNG images
     window_length = 21
@@ -157,12 +158,17 @@ if __name__ == "__main__":
     plt.grid(True)
     plt.tight_layout()
     plt.show()
-
+    ######################################
+    
+    ########### for 2D only
     # distances, areas = compute_area_function_along_path(mask, path)
 
     # # Smooth the area function
     # areas_smooth = savgol_filter(areas, window_length=21, polyorder=3)
 
     # # Plot
-    # plot_results(mask, path, distances, areas_smooth)
+
+    ##############################
+
+    plot_results(maskT, path, avg_distances, avg_areas)
 
